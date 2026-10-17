@@ -2,7 +2,7 @@ package com.example.bookstore.dto;
 
 import com.example.bookstore.model.Book;
 
-public class BookMapper {
+public class ManualBookMapper {
     public static BookResponse toResponse(Book book){
         if(book==null){
             return null;
