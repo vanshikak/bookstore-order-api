@@ -4,6 +4,8 @@ import com.example.bookstore.dto.ManualBookMapper;
 import com.example.bookstore.dto.BookResponse;
 import com.example.bookstore.dto.CreateBookRequest;
 import com.example.bookstore.dto.UpdateBookRequest;
+import com.example.bookstore.exception.BookNotFoundException;
+import com.example.bookstore.exception.DuplicateIsbnException;
 import com.example.bookstore.model.Book;
 import com.example.bookstore.repository.BookRepository;
 import org.springframework.stereotype.Service;
@@ -29,30 +31,30 @@ public class BookService {
                 .toList();
     }
 
-    public Optional<BookResponse> findBookById(Long id){
+    public BookResponse findBookById(Long id){
         return bookRepository.findById(id)
-                .map(bookMapper::toResponse);
+                .map(bookMapper::toResponse).orElseThrow(() -> new BookNotFoundException(id));
     }
 
     public BookResponse addBooks(CreateBookRequest request){
+        if(bookRepository.existsByIsbn(request.isbn())){
+            throw new DuplicateIsbnException(request.isbn());
+        }
         Book saved = bookRepository.save(bookMapper.toEntity(request));
         return bookMapper.toResponse(saved);   // saved now has its generated id
     }
 
-    public Optional<BookResponse> updateBook(Long id, UpdateBookRequest request) {
-        return bookRepository.findById(id)            // empty -> 404 in the controller
-                .map(existing -> {
-                    bookMapper.updateEntity(existing, request);   // id and isbn stay as they are
-                    return bookRepository.save(existing);
-                })
-                .map(bookMapper::toResponse);
+    public BookResponse updateBook(Long id, UpdateBookRequest request) {
+        Book existing = bookRepository.findById(id)
+                .orElseThrow(() -> new BookNotFoundException(id));
+        bookMapper.updateEntity(existing, request);   // id and isbn stay as they are
+        return bookMapper.toResponse(bookRepository.save(existing));
     }
 
-    public boolean deleteBook(Long id) {
-        if(bookRepository.existsById(id)){
-            bookRepository.deleteById(id);
-            return true;
+    public void deleteBook(Long id) {
+        if(!bookRepository.existsById(id)){
+            throw new BookNotFoundException(id);
         }
-        return false;
+        bookRepository.deleteById(id);
     }
 }

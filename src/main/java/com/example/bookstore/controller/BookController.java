@@ -1,22 +1,19 @@
 package com.example.bookstore.controller;
 
-import com.example.bookstore.dto.ApiErrorResponse;
+
 import com.example.bookstore.dto.BookResponse;
 import com.example.bookstore.dto.CreateBookRequest;
 import com.example.bookstore.dto.UpdateBookRequest;
 import com.example.bookstore.service.BookService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
-import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 
 @Validated
 @RestController
@@ -33,20 +30,8 @@ public class BookController {
     }
 
     @GetMapping("/books/{id}")
-    public ResponseEntity<?> getOneBook(@Positive @PathVariable Long id){
-        Optional<BookResponse> book = bookService.findBookById(id);
-
-        if (book.isPresent()) {
-            return ResponseEntity.ok(book.get());
-        }
-        ApiErrorResponse error = new ApiErrorResponse(
-                HttpStatus.NOT_FOUND.value(),
-                "BOOK_NOT_FOUND",
-                "Book with id " + id + " does not exist",
-                "/books/"+id,
-                Instant.now()
-        );
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    public ResponseEntity<BookResponse> getOneBook(@Positive @PathVariable Long id){
+        return ResponseEntity.ok(bookService.findBookById(id));
     }
 
     @PostMapping("/books")
@@ -58,23 +43,12 @@ public class BookController {
 
     @PutMapping("/books/{id}")
     public ResponseEntity<BookResponse> updateBook(@Positive @PathVariable Long id,@Valid @RequestBody UpdateBookRequest request){
-        return bookService.updateBook(id, request)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        return ResponseEntity.ok(bookService.updateBook(id, request));
     }
 
     @DeleteMapping("/books/{id}")
-    public ResponseEntity<?> deleteBook(@Positive @PathVariable Long id){
-        if (bookService.deleteBook(id)) {
-            return ResponseEntity.noContent().build();
-        }
-        ApiErrorResponse error = new ApiErrorResponse(
-                HttpStatus.NOT_FOUND.value(),
-                "BOOK_NOT_FOUND",
-                "Book with id " + id + " does not exist",
-                "/books/"+id,
-                Instant.now()
-        );
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    public ResponseEntity<Void> deleteBook(@Positive @PathVariable Long id){
+        bookService.deleteBook(id);
+        return ResponseEntity.noContent().build();
     }
 }
